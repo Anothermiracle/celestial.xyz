@@ -1,0 +1,1232 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1" />
+  <title>Celestial Dashboard</title>
+  <script src="https://cdn.tailwindcss.com"></script>
+  <style>
+    /* Scrollbar customization for new theme */
+    ::-webkit-scrollbar {
+      width: 8px;
+      height: 8px;
+    }
+    ::-webkit-scrollbar-thumb {
+      background-color: #6B7280; /* gray-600 */
+      border-radius: 9999px;
+    }
+    ::-webkit-scrollbar-track {
+      background: #111827; /* gray-900 */
+    }
+
+    /* Main background color */
+    main {
+      background: linear-gradient(135deg, #1F2937, #111827); /* gray-800 */
+      min-height: 100vh;
+    }
+
+    /* Sidebar scrollbar if overflow */
+    nav::-webkit-scrollbar {
+      width: 6px;
+    }
+    nav::-webkit-scrollbar-thumb {
+      background-color: #9ca3af; /* gray-400 */
+      border-radius: 9999px;
+    }
+
+    /* Tooltip styling */
+    .tooltip {
+      position: relative;
+      cursor: pointer;
+    }
+    
+    .tooltip:hover .tooltip-text {
+      visibility: visible;
+      opacity: 1;
+      transition-delay: 0s;
+    }
+    
+    .tooltip-text {
+      visibility: hidden;
+      opacity: 0;
+      width: max-content;
+      max-width: 230px;
+      background-color: #6b7280; /* gray-600 */
+      color: white;
+      text-align: center;
+      border-radius: 5px;
+      padding: 0.25rem 0.5rem;
+      position: absolute;
+      bottom: 125%;
+      left: 50%;
+      transform: translateX(-50%);
+      transition: opacity 0.3s ease;
+      pointer-events: none;
+      font-size: 0.75rem;
+      line-height: 1rem;
+      box-shadow: 0 2px 10px rgba(107, 114, 128, 0.5);
+    }
+    
+    .tooltip-text::after {
+      content: "";
+      position: absolute;
+      top: 100%;
+      left: 50%;
+      margin-left: -5px;
+      border-width: 5px;
+      border-style: solid;
+      border-color: #6b7280 transparent transparent transparent;
+    }
+
+    /* Modal Specific Styles */
+    .modal-overlay {
+      position: fixed;
+      inset: 0;
+      background-color: rgba(0, 0, 0, 0.7); /* Darker overlay */
+      z-index: 50;
+      display: flex;
+      align-items: center;
+      justify-content: center;
+      opacity: 0;
+      transition: opacity 0.3s ease;
+      pointer-events: none; /* Allow clicks through when hidden */
+    }
+
+    .modal-overlay.visible {
+      opacity: 1;
+      pointer-events: auto; /* Enable clicks when visible */
+    }
+
+    .modal-content {
+      background-color: #1F2937; /* gray-800 */
+      padding: 1.5rem;
+      border-radius: 0.5rem;
+      box-shadow: 0 10px 15px rgba(0, 0, 0, 0.3);
+      width: 90%;
+      max-width: 28rem; /* max-w-md */
+      transform: translateY(-20px);
+      transition: transform 0.3s ease, opacity 0.3s ease;
+      opacity: 0;
+    }
+
+    .modal-overlay.visible .modal-content {
+      transform: translateY(0);
+      opacity: 1;
+    }
+
+    /* Custom style for textarea to look like a code editor */
+    .code-editor-textarea {
+      font-family: 'Fira Code', 'Cascadia Code', 'Consolas', monospace;
+      font-size: 0.9rem;
+      line-height: 1.4;
+      tab-size: 4;
+      -moz-tab-size: 4;
+      white-space: pre;
+      overflow: auto;
+      resize: vertical; /* Allow vertical resizing */
+      background-color: #000; /* Black background */
+      color: #fff; /* White text */
+      border: 1px solid #4a4a4a; /* Dark gray border */
+      padding: 1rem;
+      border-radius: 0.375rem; /* rounded-md */
+      min-height: 200px; /* Minimum height for the editor */
+    }
+  </style>
+</head>
+<body class="bg-gray-900 text-white font-sans flex h-screen overflow-hidden">
+
+  <!-- Sidebar Navigation -->
+  <nav class="bg-gray-900 w-72 flex flex-col border-r border-gray-700 text-gray-300">
+    <div class="flex items-center h-16 px-6 border-b border-gray-700">
+      <svg class="h-6 w-6 text-gray-500 mr-2" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+        <path d="M12 2L2 7l10 5 10-5-10-5z"></path>
+        <path d="M2 17l10 5 10-5"></path>
+        <path d="M2 12l10 5 10-5"></path>
+      </svg>
+      <span class="text-gray-100 font-semibold text-lg">Celestial <span class="text-gray-400 font-extrabold">Dashboard</span></span>
+    </div>
+
+    <ul class="flex flex-col mt-4 space-y-1 px-2 overflow-y-auto flex-1">
+      <li>
+        <a href="#" id="sidebarDashboardLink" class="flex items-center gap-3 px-4 py-3 text-gray-200 bg-gray-800 rounded-lg" aria-current="page">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <path d="M3 12l2-2 4 4 8-8 2 2v6H3z"></path>
+          </svg>
+          Dashboard
+        </a>
+      </li>
+      <li>
+        <a href="#" id="sidebarGamesLink" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <rect x="3" y="7" width="18" height="13" rx="2" ry="2"></rect>
+            <path d="M16 3h-1a4 4 0 0 0-8 0H6a2 2 0 0 0-2 2v2h16V5a2 2 0 0 0-2-2z"></path>
+          </svg>
+          Games
+        </a>
+      </li>
+      <li>
+        <a href="#" id="sidebarMyGamesLink" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <path d="M9 12l2 2 4-4m-6 8v-6a4 4 0 0 1 8 0v6"></path>
+          </svg>
+          My Games
+        </a>
+      </li>
+      <li>
+        <a href="#" id="sidebarExecutorLink" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path>
+            <polyline points="8 7 12 3 16 7"></polyline>
+            <line x1="12" y1="3" x2="12" y2="15"></line>
+          </svg>
+          Executor
+        </a>
+      </li>
+      <li>
+        <a href="#" id="sidebarScriptHubLink" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <path d="M12 7v6m0 0v6m0-6h6m-6 0H6"></path>
+          </svg>
+          Script Hub
+        </a>
+      </li>
+      <li>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <path d="M4 4h16v16H4V4z"></path>
+            <path d="M8 8v8m8-8v8"></path>
+          </svg>
+          My Scripts
+        </a>
+      </li>
+      <li>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <path d="M12 20h9"></path>
+            <path d="M16 11v6"></path>
+            <path d="M12 9a3 3 0 0 0 3-3c0-1.1-.6-2-1-2"></path>
+            <path d="M6 12V4h12v7a3 3 0 00-3 3"></path>
+            <path d="M9 20v-5c0-2 0-4 5-5"></path>
+          </svg>
+          Redeem Key
+        </a>
+      </li>
+      <li>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <circle cx="12" cy="12" r="10"></circle>
+            <path d="M14.31 8l5.74 9.94"></path>
+            <path d="M9.69 8h11.48"></path>
+            <path d="M7.38 12l5.74-9.94"></path>
+            <path d="M9.69 16L3.95 6.06"></path>
+            <path d="M14.31 16H2.83"></path>
+            <path d="M16.62 12l-5.74 9.94"></path>
+          </svg>
+          Referrals
+        </a>
+      </li>
+      <li>
+        <a href="#" class="flex items-center gap-3 px-4 py-3 hover:text-gray-200 rounded-lg transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+            <path d="M8 16h8"></path>
+            <path d="M8 12h8"></path>
+            <path d="M8 8h8"></path>
+            <path d="M3 20h18v-6H3z"></path>
+            <path d="M5 4h14v4H5z"></path>
+          </svg>
+          Documentation
+        </a>
+      </li>
+    </ul>
+    <div class="border-t border-gray-700 p-4 flex items-center gap-2 cursor-pointer text-gray-200 hover:text-gray-300 transition select-none">
+      <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+        <path d="M17 16l4-4m0 0l-4-4m4 4H7"></path>
+      </svg>
+      Logout
+    </div>
+  </nav>
+
+  <!-- Main Content -->
+  <main class="flex-1 overflow-y-auto p-8">
+
+    <!-- Dashboard Content -->
+    <div id="dashboardContent">
+      <header class="mb-8 max-w-5xl mx-auto">
+        <h1 class="text-4xl sm:text-5xl font-extrabold text-white leading-tight">Welcome back, <span class="text-gray-400">shinazutempest</span>!</h1>
+        <p class="text-gray-500 mt-2 text-lg sm:text-xl">What would you like to do today?</p>
+      </header>
+
+      <!-- Key Metrics/Stats Section -->
+      <section class="max-w-5xl mx-auto grid gap-5 sm:grid-cols-3 mb-8">
+        <div class="bg-gray-800 rounded-lg p-6 shadow-lg flex flex-col items-center justify-center text-center">
+          <svg class="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M17 20h5v-2a3 3 0 00-5.356-1.857M17 20H2v-2a3 3 0 015.356-1.857M9 20v-2m3-2v2m-3 2h9a2 2 0 002-2v-2a2 2 0 00-2-2H9a2 2 0 00-2 2v2a2 2 0 002 2zm7-14v2m-3-2v2m-3-2v2M3 10h18V6a2 2 0 00-2-2H5a2 2 0 00-2 2v4z"></path>
+          </svg>
+          <span class="text-white font-bold text-3xl">12,345</span>
+          <p class="text-gray-400 text-sm mt-1">Total Users</p>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-6 shadow-lg flex flex-col items-center justify-center text-center">
+          <svg class="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 4a2 2 0 114 0v12a2 2 0 11-4 0V4z"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M11 16v-4a2 2 0 014 0v4m-6 0h6"></path>
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 18a2 2 0 00-2 2v2a2 2 0 002 2h2a2 2 0 002-2v-2a2 2 0 00-2-2h-2z"></path>
+          </svg>
+          <span class="text-white font-bold text-3xl">500+</span>
+          <p class="text-gray-400 text-sm mt-1">Total Games</p>
+        </div>
+        <div class="bg-gray-800 rounded-lg p-6 shadow-lg flex flex-col items-center justify-center text-center">
+          <svg class="w-10 h-10 text-gray-400 mb-3" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+          </svg>
+          <span class="text-white font-bold text-3xl">1,800+</span>
+          <p class="text-gray-400 text-sm mt-1">Total Scripts</p>
+        </div>
+      </section>
+
+      <!-- Quick Actions/Call to Action Section -->
+      <section class="max-w-5xl mx-auto bg-gray-800 rounded-lg p-6 shadow-lg mb-8">
+        <h2 class="text-xl font-semibold text-white mb-4">Quick Actions</h2>
+        <div class="grid grid-cols-1 sm:grid-cols-3 gap-4">
+          <button class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-md transition flex items-center justify-center gap-2">
+            <svg class="w-5 h-5 rotate-90" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+              <path d="M4 17v2a2 2 0 0 0 2 2h12a2 2 0 0 0 2-2v-2"></path>
+              <polyline points="8 7 12 3 16 7"></polyline>
+              <line x1="12" y1="3" x2="12" y2="15"></line>
+            </svg>
+            Launch Executor
+          </button>
+          <button class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-md transition flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+              <rect x="3" y="7" width="18" height="13" rx="2" ry="2"></rect>
+              <path d="M16 3h-1a4 4 0 0 0-8 0H6a2 2 0 0 0-2 2v2h16V5a2 2 0 0 0-2-2z"></path>
+            </svg>
+            Explore Games
+          </button>
+          <button class="bg-gray-700 hover:bg-gray-600 text-white font-semibold py-3 px-4 rounded-md transition flex items-center justify-center gap-2">
+            <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true" role="img">
+              <path d="M4 4h16v16H4V4z"></path>
+              <path d="M8 8v8m8-8v8"></path>
+            </svg>
+            Manage Scripts
+          </button>
+        </div>
+      </section>
+
+      <!-- Recent Activity/News Feed Section -->
+      <section class="max-w-5xl mx-auto bg-gray-800 rounded-lg p-6 shadow-lg">
+        <h2 class="text-xl font-semibold text-white mb-4">Recent Activity</h2>
+        <ul class="space-y-4 text-gray-300">
+          <li class="flex items-start gap-3">
+            <div class="bg-gray-700 p-2 rounded-full flex-shrink-0">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 12l2 2 4-4m-6 8v-6a4 4 0 018 0v6"></path>
+              </svg>
+            </div>
+            <div>
+              <p><span class="font-semibold text-white">You launched</span> "My Awesome Game" <span class="text-gray-400 text-sm">5 minutes ago</span></p>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <div class="bg-gray-700 p-2 rounded-full flex-shrink-0">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M10 20l4-16m4 4l4 4-4 4M6 16l-4-4 4-4"></path>
+              </svg>
+            </div>
+            <div>
+              <p><span class="font-semibold text-white">New script</span> "Anti-Cheat Bypass v2.0" <span class="text-gray-400 text-sm">was added to Script Hub</span></p>
+            </div>
+          </li>
+          <li class="flex items-start gap-3">
+            <div class="bg-gray-700 p-2 rounded-full flex-shrink-0">
+              <svg class="w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 20h9"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M16 11v6"></path>
+                <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M12 9a3 3 0 003-3c0-1.1-.6-2-1-2"></path>
+                <path d="M6 12V4h12v7a3 3 0 00-3 3"></path>
+                <path d="M9 20v-5c0-2 0-4 5-5"></path>
+              </svg>
+            </div>
+            <div>
+              <p><span class="font-semibold text-white">Your premium key</span> expires in <span class="text-yellow-400 font-semibold">7 days</span></p>
+            </div>
+          </li>
+        </ul>
+      </section>
+    </div>
+
+    <!-- Games Content (Initially Hidden) -->
+    <div id="gamesContent" class="hidden max-w-5xl mx-auto">
+      <header class="mb-8">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-200 leading-tight">Explore Games</h1>
+        <p class="text-gray-500 mt-1 text-sm sm:text-base">Discover new experiences and connect with players</p>
+      </header>
+
+      <!-- Search and Filters -->
+      <div class="mb-8 bg-gray-800 rounded-lg p-6 shadow-lg">
+        <div class="relative mb-4">
+          <input type="text" placeholder="Search for games..." 
+                 class="w-full rounded-md px-4 py-2 pl-10 bg-gray-900 border border-gray-700 focus:border-gray-400 focus:outline-none text-gray-300 transition" />
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <div class="flex flex-wrap gap-2">
+          <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md text-sm font-semibold transition">All</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition">Action</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition">Adventure</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition">Simulation</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition">Tycoon</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition">Horror</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition">FPS</button>
+        </div>
+      </div>
+
+      <!-- Game Cards Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Game Card 1 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/1F2937/D1D5DB?text=Game+Image+1" alt="Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">Epic Adventure Quest</h3>
+            <p class="text-gray-400 text-sm mb-3">Players: 12,345</p>
+            <button class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Play Now</button>
+          </div>
+        </div>
+        <!-- Game Card 2 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/1F2937/D1D5DB?text=Game+Image+2" alt="Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">Tycoon Empire Simulator</h3>
+            <p class="text-gray-400 text-sm mb-3">Players: 8,765</p>
+            <button class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Play Now</button>
+          </div>
+        </div>
+        <!-- Game Card 3 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/1F2937/D1D5DB?text=Game+Image+3" alt="Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">Zombie Survival Arena</h3>
+            <p class="text-gray-400 text-sm mb-3">Players: 21,098</p>
+            <button class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Play Now</button>
+          </div>
+        </div>
+        <!-- Game Card 4 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/1F2937/D1D5DB?text=Game+Image+4" alt="Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">Fantasy RPG World</h3>
+            <p class="text-gray-400 text-sm mb-3">Players: 15,678</p>
+            <button class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Play Now</button>
+          </div>
+        </div>
+        <!-- Game Card 5 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/1F2937/D1D5DB?text=Game+Image+5" alt="Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">Space Exploration Sim</h3>
+            <p class="text-gray-400 text-sm mb-3">Players: 9,876</p>
+            <button class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Play Now</button>
+          </div>
+        </div>
+        <!-- Game Card 6 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/1F2937/D1D5DB?text=Game+Image+6" alt="Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">Parkour Challenge</h3>
+            <p class="text-gray-400 text-sm mb-3">Players: 5,432</p>
+            <button class="w-full py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Play Now</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- Pagination -->
+      <div class="flex justify-center items-center gap-2 text-gray-400 mb-8">
+        <button class="p-2 rounded-md hover:bg-gray-700 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15 19l-7-7 7-7"></path>
+          </svg>
+        </button>
+        <span class="px-3 py-1 bg-gray-700 rounded-md text-white font-semibold">1</span>
+        <button class="px-3 py-1 hover:bg-gray-700 rounded-md transition">2</button>
+        <button class="px-3 py-1 hover:bg-gray-700 rounded-md transition">3</button>
+        <span class="px-3 py-1">...</span>
+        <button class="px-3 py-1 hover:bg-gray-700 rounded-md transition">10</button>
+        <button class="p-2 rounded-md hover:bg-gray-700 transition">
+          <svg class="w-5 h-5" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M9 5l7 7-7 7"></path>
+          </svg>
+        </button>
+      </div>
+    </div>
+
+    <!-- My Games Content (Initially Hidden) -->
+    <div id="myGamesContent" class="hidden max-w-5xl mx-auto">
+      <header class="mb-8 flex items-center justify-between">
+        <div class="flex items-center gap-3">
+          <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-200 leading-tight">My Games</h1>
+          <div id="addGameIcon" class="cursor-pointer text-gray-400 hover:text-gray-200 transition tooltip">
+            <svg class="w-6 h-6" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+              <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M15.232 5.232l3.536 3.536m-2.036-5.036a2.5 2.5 0 113.536 3.536L6.5 21.036H3v-3.572L16.732 3.732z"></path>
+            </svg>
+            <span class="tooltip-text">Add New Game</span>
+          </div>
+        </div>
+        <p class="text-gray-500 mt-1 text-sm sm:text-base hidden sm:block">Manage your owned and favorite games</p>
+      </header>
+
+      <!-- My Games Grid -->
+      <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- My Game Card 1 (with a real Roblox link for testing) -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/374151/D1D5DB?text=My+Game+1" alt="My Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">My Awesome Game</h3>
+            <p class="text-gray-400 text-sm mb-3">Last Played: 2 days ago</p>
+            <div class="flex gap-2">
+              <button class="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Launch</button>
+              <button class="manage-game-btn flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition"
+                      data-game-name="My Awesome Game"
+                      data-game-link="https://www.roblox.com/games/1560220949/Grow-a-Garden">Manage</button>
+            </div>
+          </div>
+        </div>
+        <!-- My Game Card 2 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/374151/D1D5DB?text=My+Game+2" alt="My Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">My Favorite Simulator</h3>
+            <p class="text-gray-400 text-sm mb-3">Last Played: 1 week ago</p>
+            <div class="flex gap-2">
+              <button class="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Launch</button>
+              <button class="manage-game-btn flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition"
+                      data-game-name="My Favorite Simulator"
+                      data-game-link="https://www.roblox.com/games/920587237/Adopt-Me">Manage</button>
+            </div>
+          </div>
+        </div>
+        <!-- My Game Card 3 -->
+        <div class="bg-gray-800 rounded-lg shadow-lg overflow-hidden">
+          <img src="https://via.placeholder.com/400x225/374151/D1D5DB?text=My+Game+3" alt="My Game Title" class="w-full h-40 object-cover">
+          <div class="p-4">
+            <h3 class="text-lg font-semibold text-white mb-1">My Custom Tycoon</h3>
+            <p class="text-gray-400 text-sm mb-3">Last Played: 3 days ago</p>
+            <div class="flex gap-2">
+              <button class="flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">Launch</button>
+              <button class="manage-game-btn flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition"
+                      data-game-name="My Custom Tycoon"
+                      data-game-link="https://www.roblox.com/games/6284583030/Mining-Simulator">Manage</button>
+            </div>
+          </div>
+        </div>
+        <!-- Add more My Game Cards as needed -->
+      </div>
+    </div>
+
+    <!-- Executor Content (New Section) -->
+    
+<div id="executorContent" class="hidden h-full flex flex-col items-center justify-center p-4">
+  <div class="text-center mb-6">
+    <h2 class="text-3xl font-extrabold text-white">Celestial's Executor Live Demo</h2>
+    <p class="text-gray-400 mt-2">Type your Lua script below and see the output.</p>
+  </div>
+  <div class="bg-black rounded-lg shadow-2xl border border-white max-w-5xl w-full mx-4">
+    <!-- Title Bar -->
+    <div class="flex items-center justify-between px-4 py-2 border-b border-gray-700 bg-[#0d0d0d] rounded-t-lg">
+      <div class="flex items-center space-x-2">
+        <span class="w-3 h-3 bg-red-500 rounded-full"></span>
+        <span class="w-3 h-3 bg-yellow-400 rounded-full"></span>
+        <span class="w-3 h-3 bg-green-500 rounded-full"></span>
+      </div>
+      <span class="text-white font-semibold">Celestial Executor Demo</span>
+      <span class="text-white cursor-pointer">&times;</span>
+    </div>
+
+    <!-- Executor Body -->
+    <div class="flex flex-col md:flex-row text-white p-4 gap-4 bg-[#0a0a0a] rounded-b-lg">
+      <!-- Code Editor -->
+      <div class="flex-1 bg-black border border-gray-700 rounded-lg p-4 flex flex-col">
+        <h3 class="font-bold mb-2">✧ Lua Script Editor</h3>
+        <textarea id="scriptEditor" class="code-editor-textarea flex-1" placeholder="-- Welcome to Celestial Executor&#10;-- Enter your Lua script here&#10;&#10;print('Hello from Celestial!')&#10;&#10;-- Example: Get all players&#10;-- for i, player in pairs(game.Players:GetPlayers()) do&#10;--   print(player.Name)&#10;-- end&#10;&#10;-- This is a demo version&#10;-- Purchase a plan to unlock full functionality"></textarea>
+        <div class="flex gap-2 mt-4">
+          <button id="runScriptBtn" class="py-2 px-4 bg-blue-600 hover:bg-blue-700 rounded-md font-semibold transition">Run Script</button>
+          <button id="clearEditorBtn" class="py-2 px-4 bg-gray-700 hover:bg-gray-600 rounded-md font-semibold transition">Clear Editor</button>
+        </div>
+        <h3 class="font-bold mt-4 mb-2">✧ Console Output</h3>
+        <textarea id="consoleOutput" class="code-editor-textarea flex-1" readonly placeholder="Output will appear here..."></textarea>
+      </div>
+
+      <!-- Buttons Panel -->
+      <div class="w-full md:w-64 flex flex-col gap-4">
+        <div>
+          <h4 class="font-bold mb-1 text-center">QUICK SCRIPTS</h4>
+          <div class="flex flex-col gap-2">
+            <button class="bg-gray-800 hover:bg-gray-700 py-2 rounded-md">Infinite Jump</button>
+            <button class="bg-gray-800 hover:bg-gray-700 py-2 rounded-md">Speed Boost</button>
+            <button class="bg-gray-800 hover:bg-gray-700 py-2 rounded-md">Fly Script</button>
+            <button class="bg-gray-800 hover:bg-gray-700 py-2 rounded-md">Noclip</button>
+          </div>
+        </div>
+
+        <div class="mt-4">
+          <h4 class="font-bold mb-1 text-center">TOOLS</h4>
+          <div class="flex flex-col gap-2">
+            <button class="bg-gray-800 hover:bg-gray-700 py-2 rounded-md">Script Hub</button>
+            <button class="bg-gray-800 hover:bg-gray-700 py-2 rounded-md">Remote Spy</button>
+            <button class="bg-gray-800 hover:bg-gray-700 py-2 rounded-md">Dex Explorer</button>
+          </div>
+        </div>
+      </div>
+    </div>
+  </div>
+</div>
+
+    <!-- Script Hub Content -->
+    <div id="scriptHubContent" class="hidden max-w-5xl mx-auto">
+      <header class="mb-8">
+        <h1 class="text-3xl sm:text-4xl font-extrabold text-gray-200 leading-tight">Script Hub</h1>
+        <p class="text-gray-500 mt-1 text-sm sm:text-base">Explore and manage your scripts</p>
+      </header>
+
+      <!-- Search and Filters -->
+      <div class="mb-8 bg-gray-800 rounded-lg p-6 shadow-lg">
+        <div class="relative mb-4">
+          <input type="text" id="scriptSearchInput" placeholder="Search for scripts..." 
+                 class="w-full rounded-md px-4 py-2 pl-10 bg-gray-900 border border-gray-700 focus:border-gray-400 focus:outline-none text-gray-300 transition" />
+          <svg class="absolute left-3 top-1/2 transform -translate-y-1/2 w-5 h-5 text-gray-400" fill="none" stroke="currentColor" viewBox="0 0 24 24" aria-hidden="true">
+            <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z"></path>
+          </svg>
+        </div>
+        <div id="scriptFilterButtons" class="flex flex-wrap gap-2">
+          <button class="px-4 py-2 bg-gray-700 hover:bg-gray-600 text-gray-200 rounded-md text-sm font-semibold transition" data-filter="all">All</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition" data-filter="combat">Combat</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition" data-filter="utility">Utility</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition" data-filter="exploit">Exploit</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition" data-filter="fun">Fun</button>
+          <button class="px-4 py-2 bg-gray-900 hover:bg-gray-700 text-gray-400 rounded-md text-sm font-semibold transition" data-filter="misc">Misc</button>
+        </div>
+      </div>
+
+      <!-- Script Cards Grid -->
+      <div id="scriptCardsGrid" class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-6 mb-8">
+        <!-- Script cards will be dynamically loaded here -->
+        <p class="text-gray-400 text-center col-span-full">Loading scripts...</p>
+      </div>
+
+      <!-- Pagination -->
+      <div id="scriptPagination" class="flex justify-center items-center gap-2 text-gray-400 mb-8">
+        <!-- Pagination buttons will be dynamically loaded here -->
+      </div>
+    </div>
+
+</div>
+</main>
+
+  <!-- Add Game Modal -->
+  <div id="addGameModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h2 class="text-xl font-semibold text-white mb-4">Add New Game</h2>
+      <div class="mb-4">
+        <label for="modalGameName" class="block text-gray-300 font-semibold mb-1">Game Name</label>
+        <input type="text" id="modalGameName" placeholder="e.g., My Awesome Roblox Game"
+               class="w-full rounded-md px-4 py-2 bg-gray-900 border border-gray-700 focus:border-gray-400 focus:outline-none text-gray-300 transition" />
+      </div>
+      <div class="mb-6">
+        <label for="modalGameLink" class="block text-gray-300 font-semibold mb-1">Game Link</label>
+        <input type="url" id="modalGameLink" placeholder="e.g., https://www.roblox.com/games/12345/My-Game"
+               class="w-full rounded-md px-4 py-2 bg-gray-900 border border-gray-700 focus:border-gray-400 focus:outline-none text-gray-300 transition" />
+        <p id="modalError" class="text-red-400 text-sm mt-2 hidden">Please fill in all fields.</p>
+      </div>
+      <div class="flex justify-end gap-3">
+        <button id="cancelAddGameBtn" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">
+          Cancel
+        </button>
+        <button id="continueAddGameBtn" class="px-5 py-2 bg-gray-600 hover:bg-gray-500 text-white font-semibold rounded-md transition">
+          Continue
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- Manage Game Modal -->
+  <div id="manageGameModal" class="modal-overlay hidden">
+    <div class="modal-content">
+      <h2 class="text-xl font-semibold text-white mb-4">Manage Game</h2>
+      <div class="mb-4">
+        <label for="manageModalGameName" class="block text-gray-300 font-semibold mb-1">Game Name</label>
+        <input type="text" id="manageModalGameName" placeholder="e.g., My Awesome Roblox Game"
+               class="w-full rounded-md px-4 py-2 bg-gray-900 border border-gray-700 focus:border-gray-400 focus:outline-none text-gray-300 transition" />
+      </div>
+      <div class="mb-4">
+        <label for="manageModalGameLink" class="block text-gray-300 font-semibold mb-1">Game Link</label>
+        <input type="url" id="manageModalGameLink" placeholder="e.g., https://www.roblox.com/games/12345/My-Game"
+               class="w-full rounded-md px-4 py-2 bg-gray-900 border border-gray-700 focus:border-gray-400 focus:outline-none text-gray-300 transition" />
+        <p id="manageModalError" class="text-red-400 text-sm mt-2 hidden">Please fill in all fields.</p>
+      </div>
+      <!-- Game Profile Display -->
+      <div id="modalGameProfileDisplay" class="mt-4 p-3 bg-gray-900 rounded-md hidden flex items-center gap-4">
+        <!-- Game profile will be inserted here by JavaScript -->
+      </div>
+      <div class="flex justify-end gap-3 mt-6">
+        <button id="cancelManageGameBtn" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">
+          Cancel
+
+        </button>
+        <button id="saveGameChangesBtn" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition">
+          Save Changes
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <!-- View Script Modal -->
+  <div id="viewScriptModal" class="modal-overlay hidden">
+    <div class="modal-content max-w-2xl">
+      <h2 id="viewScriptTitle" class="text-xl font-semibold text-white mb-4"></h2>
+      <textarea id="viewScriptContent" class="code-editor-textarea w-full h-96 mb-4" readonly></textarea>
+      <div class="flex justify-end gap-3">
+        <button id="closeViewScriptBtn" class="px-5 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition">
+          Close
+        </button>
+        <button id="copyScriptContentBtn" class="px-5 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition">
+          Copy Script
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script>
+    document.addEventListener('DOMContentLoaded', () => {
+      // --- Content Switching Logic ---
+      const dashboardContent = document.getElementById('dashboardContent');
+      const gamesContent = document.getElementById('gamesContent');
+      const myGamesContent = document.getElementById('myGamesContent'); 
+      const executorContent = document.getElementById('executorContent'); 
+      const scriptHubContent = document.getElementById('scriptHubContent'); 
+      
+      const sidebarDashboardLink = document.getElementById('sidebarDashboardLink');
+      const sidebarGamesLink = document.getElementById('sidebarGamesLink');
+      const sidebarMyGamesLink = document.getElementById('sidebarMyGamesLink'); 
+      const sidebarExecutorLink = document.getElementById('sidebarExecutorLink'); 
+      const sidebarScriptHubLink = document.getElementById('sidebarScriptHubLink'); 
+      
+      const allSidebarLinks = document.querySelectorAll('nav ul li a');
+
+      function showContent(contentId) {
+        // Hide all content sections
+        dashboardContent.classList.add('hidden');
+        gamesContent.classList.add('hidden');
+        myGamesContent.classList.add('hidden'); 
+        executorContent.classList.add('hidden'); 
+        scriptHubContent.classList.add('hidden'); 
+
+        // Show the selected content section
+        document.getElementById(contentId).classList.remove('hidden');
+
+        // Update active sidebar link styling
+        allSidebarLinks.forEach(link => {
+          // Remove all active and hover classes
+          link.classList.remove('bg-gray-800', 'bg-gray-900', 'text-gray-200', 'hover:text-gray-400');
+          // Add default inactive hover state
+          link.classList.add('hover:text-gray-400');
+        });
+
+        // Find the currently active link based on contentId
+        let activeLink;
+        if (contentId === 'dashboardContent') {
+          activeLink = sidebarDashboardLink;
+        } else if (contentId === 'gamesContent') {
+          activeLink = sidebarGamesLink;
+        } else if (contentId === 'myGamesContent') { 
+          activeLink = sidebarMyGamesLink;
+        } else if (contentId === 'executorContent') { 
+          activeLink = sidebarExecutorLink;
+        } else if (contentId === 'scriptHubContent') { 
+          activeLink = sidebarScriptHubLink;
+          loadScripts(); // Load scripts when Script Hub is shown
+        }
+        // Add active state classes to the current active link
+        if (activeLink) {
+          activeLink.classList.remove('hover:text-gray-400'); 
+          activeLink.classList.add('bg-gray-800', 'text-gray-200');
+        }
+      }
+
+      // Initial state: show dashboard and set its link as active
+      showContent('dashboardContent');
+
+      // Event listeners for sidebar links
+      sidebarDashboardLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showContent('dashboardContent');
+      });
+
+      sidebarGamesLink.addEventListener('click', (e) => {
+        e.preventDefault();
+        showContent('gamesContent');
+      });
+
+      sidebarMyGamesLink.addEventListener('click', (e) => { 
+        e.preventDefault();
+        showContent('myGamesContent');
+      });
+
+      sidebarExecutorLink.addEventListener('click', (e) => { 
+        e.preventDefault();
+        showContent('executorContent');
+      });
+
+      sidebarScriptHubLink.addEventListener('click', (e) => { 
+        e.preventDefault();
+        showContent('scriptHubContent');
+      });
+
+
+      // --- Add Game Modal Logic ---
+      const addGameIcon = document.getElementById('addGameIcon');
+      const addGameModal = document.getElementById('addGameModal');
+      const modalGameNameInput = document.getElementById('modalGameName');
+      const modalGameLinkInput = document.getElementById('modalGameLink');
+      const cancelAddGameBtn = document.getElementById('cancelAddGameBtn');
+      const continueAddGameBtn = document.getElementById('continueAddGameBtn');
+      const modalError = document.getElementById('modalError');
+
+      function showModal() {
+        addGameModal.classList.remove('hidden');
+        void addGameModal.offsetWidth; 
+        addGameModal.classList.add('visible');
+        modalGameNameInput.value = ''; 
+        modalGameLinkInput.value = '';
+        modalError.classList.add('hidden'); 
+      }
+
+      function hideModal() {
+        addGameModal.classList.remove('visible');
+        addGameModal.addEventListener('transitionend', function handler() {
+          addGameModal.classList.add('hidden');
+          addGameModal.removeEventListener('transitionend', handler);
+        });
+      }
+
+      if (addGameIcon) { 
+        addGameIcon.addEventListener('click', showModal);
+      }
+      cancelAddGameBtn.addEventListener('click', hideModal);
+
+      continueAddGameBtn.addEventListener('click', () => {
+        const gameName = modalGameNameInput.value.trim();
+        const gameLink = modalGameLinkInput.value.trim();
+
+        if (!gameName || !gameLink) {
+          modalError.classList.remove('hidden');
+          return;
+        }
+
+        console.log('New Game Added:');
+        console.log('  Name:', gameName);
+        console.log('  Link:', gameLink);
+
+        hideModal();
+      });
+
+
+      // --- Executor Logic ---
+      const scriptEditor = document.getElementById('scriptEditor');
+      const consoleOutput = document.getElementById('consoleOutput');
+      const runScriptBtn = document.getElementById('runScriptBtn');
+      const clearEditorBtn = document.getElementById('clearEditorBtn');
+
+      runScriptBtn.addEventListener('click', () => {
+        const scriptContent = scriptEditor.value;
+        if (scriptContent.trim() === '') {
+          consoleOutput.value += 'Error: No script to execute.\n';
+          return;
+        }
+        consoleOutput.value += `Executing script:\n${scriptContent}\n--- Script End ---\n`;
+      });
+
+      clearEditorBtn.addEventListener('click', () => {
+        scriptEditor.value = '';
+        consoleOutput.value = ''; 
+      });
+
+      // --- Manage Game Modal Logic ---
+      const manageGameModal = document.getElementById('manageGameModal');
+      const manageModalGameNameInput = document.getElementById('manageModalGameName');
+      const manageModalGameLinkInput = document.getElementById('manageModalGameLink');
+      const cancelManageGameBtn = document.getElementById('cancelManageGameBtn');
+      const saveGameChangesBtn = document.getElementById('saveGameChangesBtn');
+      const manageModalError = document.getElementById('manageModalError');
+      const modalGameProfileDisplay = document.getElementById('modalGameProfileDisplay');
+
+      function showManageGameModal(gameName = '', gameLink = '') {
+        manageGameModal.classList.remove('hidden');
+        void manageGameModal.offsetWidth; 
+        manageGameModal.classList.add('visible');
+        manageModalGameNameInput.value = gameName;
+        manageModalGameLinkInput.value = gameLink;
+        manageModalError.classList.add('hidden');
+        modalGameProfileDisplay.classList.add('hidden'); 
+        modalGameProfileDisplay.innerHTML = ''; 
+
+        if (gameLink) {
+          fetchRobloxGameDetails(gameLink);
+        }
+      }
+
+      function hideManageGameModal() {
+        manageGameModal.classList.remove('visible');
+        manageGameModal.addEventListener('transitionend', function handler() {
+          manageGameModal.classList.add('hidden');
+          manageGameModal.removeEventListener('transitionend', handler);
+        });
+      }
+
+      cancelManageGameBtn.addEventListener('click', hideManageGameModal);
+
+      saveGameChangesBtn.addEventListener('click', () => {
+        const gameName = manageModalGameNameInput.value.trim();
+        const gameLink = manageModalGameLinkInput.value.trim();
+
+        if (!gameName || !gameLink) {
+          manageModalError.classList.remove('hidden');
+          return;
+        }
+
+        console.log('Game Changes Saved:');
+        console.log('  Name:', gameName);
+        console.log('  Link:', gameLink);
+
+        hideManageGameModal();
+      });
+
+      document.querySelectorAll('.manage-game-btn').forEach(button => {
+        button.addEventListener('click', (e) => {
+          const gameName = e.target.dataset.gameName;
+          const gameLink = e.target.dataset.gameLink;
+          showManageGameModal(gameName, gameLink);
+        });
+      });
+
+      manageModalGameLinkInput.addEventListener('input', () => {
+        const gameLink = manageModalGameLinkInput.value.trim();
+        if (gameLink) {
+          fetchRobloxGameDetails(gameLink);
+        } else {
+          modalGameProfileDisplay.classList.add('hidden');
+          modalGameProfileDisplay.innerHTML = '';
+        }
+      });
+
+      async function fetchRobloxGameDetails(gameLink) {
+        modalGameProfileDisplay.classList.remove('hidden');
+        modalGameProfileDisplay.innerHTML = '<p class="text-gray-400">Fetching game details...</p>';
+
+        try {
+          const url = new URL(gameLink);
+          const pathSegments = url.pathname.split('/');
+          const gameId = pathSegments[2]; 
+
+          if (!gameId) {
+            throw new Error('Invalid Roblox game link. Could not extract game ID.');
+          }
+
+          const universeId = parseInt(gameId);
+
+          if (isNaN(universeId)) {
+            throw new Error('Invalid Roblox game ID in the link.');
+          }
+
+          const gameDetailsResponse = await fetch(`https://games.roblox.com/v1/games?universeIds=${universeId}`);
+          if (!gameDetailsResponse.ok) {
+            throw new Error(`HTTP error! status: ${gameDetailsResponse.status}`);
+          }
+          const gameDetailsData = await gameDetailsResponse.json();
+
+          if (!gameDetailsData.data || gameDetailsData.data.length === 0) {
+            throw new Error('Roblox game not found.');
+          }
+
+          const game = gameDetailsData.data[0];
+          const gameName = game.name;
+          const creatorName = game.creator.name;
+          const gameIconUrl = `https://thumbnails.roblox.com/v1/universes/icons?universeIds=${universeId}&size=150x150&format=Png&is=false`;
+
+          const gameIconResponse = await fetch(gameIconUrl);
+          if (!gameIconResponse.ok) {
+            throw new Error(`HTTP error! status: ${gameIconResponse.status}`);
+          }
+          const gameIconData = await gameIconResponse.json();
+          let iconUrl = '';
+          if (gameIconData.data && gameIconData.data.length > 0) {
+            iconUrl = gameIconData.data[0].imageUrl;
+          }
+
+          modalGameProfileDisplay.innerHTML = `
+            <img src="${iconUrl || 'https://via.placeholder.com/150/374151/D1D5DB?text=No+Icon'}" alt="${gameName} icon" class="w-16 h-16 rounded-md border-2 border-gray-600">
+            <div class="flex flex-col">
+              <span class="text-white font-semibold text-lg">${gameName}</span>
+              <span class="text-gray-400 text-sm">Creator: ${creatorName}</span>
+            </div>
+          `;
+        } catch (error) {
+          console.error('Error fetching Roblox game data:', error);
+          modalGameProfileDisplay.innerHTML = `<p class="text-red-400">Failed to fetch game details: ${error.message}</p>`;
+        }
+      }
+
+      // --- Script Hub Logic ---
+      const scriptSearchInput = document.getElementById('scriptSearchInput');
+      const scriptFilterButtons = document.getElementById('scriptFilterButtons');
+      const scriptCardsGrid = document.getElementById('scriptCardsGrid');
+      const scriptPagination = document.getElementById('scriptPagination');
+
+      const viewScriptModal = document.getElementById('viewScriptModal');
+      const viewScriptTitle = document.getElementById('viewScriptTitle');
+      const viewScriptContent = document.getElementById('viewScriptContent');
+      const closeViewScriptBtn = document.getElementById('closeViewScriptBtn');
+      const copyScriptContentBtn = document.getElementById('copyScriptContentBtn');
+
+      let currentPage = 1;
+      let currentSearchQuery = '';
+      let currentFilter = 'all';
+
+      const SCRIPTBLOX_API_BASE = 'https://scriptblox.com/api/script/';
+
+      async function fetchScripts(page = 1, limit = 9) {
+        scriptCardsGrid.innerHTML = '<p class="text-gray-400 text-center col-span-full">Loading scripts...</p>';
+        scriptPagination.innerHTML = '';
+        try {
+          const response = await fetch(`${SCRIPTBLOX_API_BASE}latest?page=${page}&limit=${limit}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          displayScripts(data.result.scripts, data.result.totalPages, page);
+        } catch (error) {
+          console.error('Error fetching scripts:', error);
+          scriptCardsGrid.innerHTML = `<p class="text-red-400 text-center col-span-full">Failed to load scripts: ${error.message}</p>`;
+        }
+      }
+
+      async function searchScripts(query, page = 1, limit = 9) {
+        scriptCardsGrid.innerHTML = '<p class="text-gray-400 text-center col-span-full">Searching scripts...</p>';
+        scriptPagination.innerHTML = '';
+        try {
+          const response = await fetch(`${SCRIPTBLOX_API_BASE}search?q=${encodeURIComponent(query)}&page=${page}&limit=${limit}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          displayScripts(data.result.scripts, data.result.totalPages, page);
+        } catch (error) {
+          console.error('Error searching scripts:', error);
+          scriptCardsGrid.innerHTML = `<p class="text-red-400 text-center col-span-full">Failed to search scripts: ${error.message}</p>`;
+        }
+      }
+
+      async function fetchScriptDetails(scriptId) {
+        try {
+          const response = await fetch(`${SCRIPTBLOX_API_BASE}get-script?id=${scriptId}`);
+          if (!response.ok) {
+            throw new Error(`HTTP error! status: ${response.status}`);
+          }
+          const data = await response.json();
+          return data.result;
+        } catch (error) {
+          console.error('Error fetching script details:', error);
+          return null;
+        }
+      }
+
+      function displayScripts(scripts, totalPages, currentPage) {
+        scriptCardsGrid.innerHTML = '';
+        if (scripts.length === 0) {
+          scriptCardsGrid.innerHTML = '<p class="text-gray-400 text-center col-span-full">No scripts found.</p>';
+          return;
+        }
+
+        scripts.forEach(script => {
+          const scriptCard = document.createElement('div');
+          scriptCard.className = 'bg-gray-800 rounded-lg shadow-lg overflow-hidden';
+          scriptCard.innerHTML = `
+            <img src="${script.image || 'https://via.placeholder.com/400x225/1F2937/D1D5DB?text=Script+Icon'}" alt="Script Icon" class="w-full h-40 object-cover">
+            <div class="p-4">
+              <h3 class="text-lg font-semibold text-white mb-1">${script.title}</h3>
+              <p class="text-gray-400 text-sm mb-3">${script.game ? `Game: ${script.game.name}` : 'Universal'}</p>
+              <div class="flex justify-between items-center text-gray-400 text-xs mb-3">
+                <span>Views: <span class="font-semibold">${script.views ? script.views.toLocaleString() : 'N/A'}</span></span>
+                <span>Type: <span class="font-semibold">${script.scriptType || 'N/A'}</span></span>
+              </div>
+              <div class="flex gap-2">
+                <button class="view-script-btn flex-1 py-2 bg-gray-700 hover:bg-gray-600 text-white font-semibold rounded-md transition" data-script-id="${script._id}">View Script</button>
+                <button class="copy-script-btn flex-1 py-2 bg-blue-600 hover:bg-blue-700 text-white font-semibold rounded-md transition" data-script-id="${script._id}">Copy Script</button>
+              </div>
+            </div>
+          `;
+          scriptCardsGrid.appendChild(scriptCard);
+        });
+
+        // Add event listeners for new buttons
+        scriptCardsGrid.querySelectorAll('.view-script-btn').forEach(button => {
+          button.addEventListener('click', async (e) => {
+            const scriptId = e.target.dataset.scriptId;
+            const scriptDetails = await fetchScriptDetails(scriptId);
+            if (scriptDetails) {
+              viewScriptTitle.textContent = scriptDetails.title;
+              viewScriptContent.value = scriptDetails.script;
+              viewScriptModal.classList.remove('hidden');
+              void viewScriptModal.offsetWidth;
+              viewScriptModal.classList.add('visible');
+            } else {
+              alert('Failed to load script content.');
+            }
+          });
+        });
+
+        scriptCardsGrid.querySelectorAll('.copy-script-btn').forEach(button => {
+          button.addEventListener('click', async (e) => {
+            const scriptId = e.target.dataset.scriptId;
+            const scriptDetails = await fetchScriptDetails(scriptId);
+            if (scriptDetails && scriptDetails.script) {
+              navigator.clipboard.writeText(scriptDetails.script)
+                .then(() => {
+                  alert('Script copied to clipboard!');
+                })
+                .catch(err => {
+                  console.error('Failed to copy script: ', err);
+                  alert('Failed to copy script.');
+                });
+            } else {
+              alert('Script content not available to copy.');
+            }
+          });
+        });
+
+        renderPagination(totalPages, currentPage);
+      }
+
+      function renderPagination(totalPages, currentPage) {
+        scriptPagination.innerHTML = '';
+        if (totalPages <= 1) return;
+
+        const createPageButton = (page, text, isActive = false, isDisabled = false) => {
+          const button = document.createElement('button');
+          button.className = `px-3 py-1 rounded-md transition ${isActive ? 'bg-gray-700 text-white font-semibold' : 'hover:bg-gray-700'} ${isDisabled ? 'opacity-50 cursor-not-allowed' : ''}`;
+          button.textContent = text;
+          button.disabled = isDisabled;
+          if (!isDisabled) {
+            button.addEventListener('click', () => {
+              currentPage = page;
+              if (currentSearchQuery) {
+                searchScripts(currentSearchQuery, currentPage);
+              } else {
+                fetchScripts(currentPage);
+              }
+            });
+          }
+          return button;
+        };
+
+        scriptPagination.appendChild(createPageButton(currentPage - 1, 'Previous', false, currentPage === 1));
+
+        let startPage = Math.max(1, currentPage - 2);
+        let endPage = Math.min(totalPages, currentPage + 2);
+
+        if (startPage > 1) {
+          scriptPagination.appendChild(createPageButton(1, '1'));
+          if (startPage > 2) {
+            const span = document.createElement('span');
+            span.className = 'px-3 py-1';
+            span.textContent = '...';
+            scriptPagination.appendChild(span);
+          }
+        }
+
+        for (let i = startPage; i <= endPage; i++) {
+          scriptPagination.appendChild(createPageButton(i, i.toString(), i === currentPage));
+        }
+
+        if (endPage < totalPages) {
+          if (endPage < totalPages - 1) {
+            const span = document.createElement('span');
+            span.className = 'px-3 py-1';
+            span.textContent = '...';
+            scriptPagination.appendChild(span);
+          }
+          scriptPagination.appendChild(createPageButton(totalPages, totalPages.toString()));
+        }
+
+        scriptPagination.appendChild(createPageButton(currentPage + 1, 'Next', false, currentPage === totalPages));
+      }
+
+      // Event Listeners for Script Hub
+      scriptSearchInput.addEventListener('input', debounce(() => {
+        currentSearchQuery = scriptSearchInput.value.trim();
+        currentPage = 1; // Reset to first page on new search
+        if (currentSearchQuery) {
+          searchScripts(currentSearchQuery, currentPage);
+        } else {
+          fetchScripts(currentPage);
+        }
+      }, 300)); // Debounce to prevent too many API calls
+
+      scriptFilterButtons.addEventListener('click', (e) => {
+        if (e.target.tagName === 'BUTTON') {
+          currentFilter = e.target.dataset.filter;
+          currentPage = 1; // Reset to first page on new filter
+          // In a real scenario, you'd pass the filter to the API call
+          // For now, we'll just re-fetch all or search based on current query
+          if (currentSearchQuery) {
+            searchScripts(currentSearchQuery, currentPage);
+          } else {
+            fetchScripts(currentPage);
+          }
+
+          // Update active filter button styling
+          scriptFilterButtons.querySelectorAll('button').forEach(btn => {
+            btn.classList.remove('bg-gray-700', 'text-gray-200');
+            btn.classList.add('bg-gray-900', 'text-gray-400');
+          });
+          e.target.classList.remove('bg-gray-900', 'text-gray-400');
+          e.target.classList.add('bg-gray-700', 'text-gray-200');
+        }
+      });
+
+      // View Script Modal Close Button
+      closeViewScriptBtn.addEventListener('click', () => {
+        viewScriptModal.classList.remove('visible');
+        viewScriptModal.addEventListener('transitionend', function handler() {
+          viewScriptModal.classList.add('hidden');
+          viewScriptModal.removeEventListener('transitionend', handler);
+        });
+      });
+
+      // Copy Script Content Button in View Script Modal
+      copyScriptContentBtn.addEventListener('click', () => {
+        navigator.clipboard.writeText(viewScriptContent.value)
+          .then(() => {
+            alert('Script copied to clipboard!');
+          })
+          .catch(err => {
+            console.error('Failed to copy script: ', err);
+            alert('Failed to copy script.');
+          });
+      });
+
+      // Utility function for debouncing
+      function debounce(func, delay) {
+        let timeout;
+        return function(...args) {
+          const context = this;
+          clearTimeout(timeout);
+          timeout = setTimeout(() => func.apply(context, args), delay);
+        };
+      }
+
+      // Initial load of scripts when the page loads (if Script Hub is the default view)
+      // Or it will be called when sidebarScriptHubLink is clicked.
+      // loadScripts(); // Removed as showContent handles initial load
+    });
+  </script>
+</body>
+</html>
